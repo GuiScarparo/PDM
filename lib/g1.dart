@@ -32,7 +32,7 @@ class _MyAppState extends State<MyApp> {
       SnackBar(
         content: Row(
           children: [
-            Icon(Icons.check_circle, color: Colors.white),
+            Icon(Icons.check_circle, color: const Color.fromARGB(255, 0, 0, 255)),
             SizedBox(width: 10),
             Text(
               mensagem,
@@ -44,7 +44,7 @@ class _MyAppState extends State<MyApp> {
           ],
         ),
 
-        backgroundColor: Colors.green,
+        backgroundColor: const Color.fromARGB(255, 16, 98, 238),
 
         behavior: SnackBarBehavior.floating,
 
