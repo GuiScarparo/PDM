@@ -1,4 +1,4 @@
-//Exemplo 01 - Salvar informações de login
+﻿//Exemplo 01 - Salvar informações de login
 import 'package:flutter/material.dart';
 //Importa o SharedPrefences
 import 'package:shared_preferences/shared_preferences.dart';
