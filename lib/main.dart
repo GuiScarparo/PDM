@@ -1,162 +1,333 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'pages/produto_page.dart';
+import 'pages/carrinho_page.dart';
 
-void main() {
-  runApp(const MyApp());
+// MODELO DO PRODUTO
+class Suculenta {
+  // Classe que representa uma suculenta da loja. Funciona como um "molde" para criar produtos.
+  final int id;
+  final String nome;
+  final String nomeCientifico;
+  final String emoji;
+  final double preco;
+  final String descricao;
+
+  const Suculenta({
+    // Construtor da classe. O "required" obriga que todos os campos sejam preenchidos ao criar uma suculenta.
+    required this.id,
+    required this.nome,
+    required this.nomeCientifico,
+    required this.emoji,
+    required this.preco,
+    required this.descricao,
+  });
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+// CATÁLOGO DE PRODUTOS
+// Lista constante contendo todos os produtos da loja. O tipo da lista é List<Suculenta>, ou seja, uma lista composta apenas por objetos Suculenta.
+const List<Suculenta> produtos = [
+  Suculenta(
+    id: 1,
+    nome: 'Roseta-de-Pedra',
+    nomeCientifico: 'Echeveria elegans',
+    emoji: '🌸',
+    preco: 18.90,
+    descricao: 'Suculenta compacta com folhas em roseta verde-azuladas.',
+  ),
 
-  @override                               //Configura o MaterialApp. Definimos o título, removemos a etiqueta de debug
-  Widget build(BuildContext context) {   //E aplicamos um tema baseado na cor verde (0xFF4CAF50), ativando o Material 3.
-    return MaterialApp(                 //O Material 3 é a próxima geração do design system do Google
-      title: 'Minhas Tarefas',         //Trazendo uma aparência mais moderna e personalizável para os aplicativos Flutter
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF4CAF50)),
-        useMaterial3: true,
-      ),
-      home: const TarefasPage(),
-    );
+  Suculenta(
+    id: 2,
+    nome: 'Muda feijão',
+    nomeCientifico: 'Haworthiopsis attenuata',
+    emoji: '🌱',
+    preco: 5.00,
+    descricao: 'O principal grão das refeições brasileiras.',
+  ),
+
+  Suculenta(
+    id: 3,
+    nome: 'Babosa',
+    nomeCientifico: 'Aloe vera',
+    emoji: '🌿',
+    preco: 32.00,
+    descricao: 'Gel das folhas hidrata a pele e alivia queimaduras.',
+  ),
+
+  Suculenta(
+    id: 4,
+    nome: 'Cacto-Ouriço',
+    nomeCientifico: 'Echinocactus grusonii',
+    emoji: '🌵',
+    preco: 15.00,
+    descricao: 'praticamente não precisa de água.',
+  ),
+];
+
+// ITEM DO CARRINHO
+
+// Classe utilizada para representar um item armazenado dentro do carrinho.
+class ItemCarrinho {
+  final Suculenta produto;
+  int quantidade;
+  // Construtor.
+  ItemCarrinho(this.produto, this.quantidade);
+}
+
+// CONTROLE DO CARRINHO
+
+// ChangeNotifier permite avisar a interface sempre que alguma informação for alterada.
+// Quando notifyListeners() é chamado, todos os widgets que estiverem ouvindo esse objeto serão atualizados automaticamente.
+class CarrinhoController extends ChangeNotifier {
+  // Lista que armazena todos os itens atualmente presentes no carrinho.
+  List<ItemCarrinho> itens = [];
+
+  // ADICIONAR PRODUTO
+  void adicionar(Suculenta produto) {
+    for (var item in itens) {
+      // Percorre todos os itens do carrinho.
+      if (item.produto.id == produto.id) {
+        // Verifica se o produto já existe no carrinho.
+        item.quantidade++; // Se existir, aumenta a quantidade em 1.
+        notifyListeners(); // Atualiza todos os widgets que estão no carrinho.
+        return;
+      }
+    }
+
+    // Caso o produto não exista no carrinho, cria um novo item com quantidade inicial igual a 1.
+    itens.add(ItemCarrinho(produto, 1));
+    notifyListeners(); // Atualiza a interface.
   }
-}
 
-class TarefasPage extends StatefulWidget { //O StatefulWiget permite que o dados modificados apareção atualizados na tela
-  const TarefasPage({super.key});
+  // REMOVER PRODUTO
+  void remover(Suculenta produto) {
+    // Remove uma unidade do produto.
+    for (int i = 0; i < itens.length; i++) {
+      // Percorre todos os itens da lista.
+      if (itens[i].produto.id == produto.id) {
+        // Verifica se encontrou o produto.
+        if (itens[i].quantidade > 1) {
+          // Se houver mais de uma unidade.
+          itens[i].quantidade--; // Diminui apenas uma unidade.
+        } else {
+          // Se houver apenas uma unidade, remove completamente o item.
+          itens.removeAt(i);
+        }
 
-  @override
-  State<TarefasPage> createState() => _TarefasPageState(); //Cria o objeto de estado associado a este widget.
-}
-
-class _TarefasPageState extends State<TarefasPage> { //logica do estado da pagina
-  final List<Map<String, dynamic>> _tarefas = [     //Lista de tarefas, onde cada tarefa é representada por um mapa contendo o título e o status de conclusão
-    {'titulo': 'Fazer a apresentação', 'concluida': true},
-    {'titulo': 'Terminar as páginas', 'concluida': false},
-    {'titulo': 'Terminar a ficha da Carol', 'concluida': false},
-  ];
-
-  final TextEditingController _controller = TextEditingController(); //Controller que permite ler o texto digitado pelo usuario
-
-  void _adicionarTarefa() { //função para adicionar algo na lista
-    showDialog(            // Função nativa que exibe uma janela pop-up
-      context: context,
-      builder: (context) {
-        return AlertDialog( //Retorna um widget de diálogo padrão com título, conteúdo e ações.
-          title: const Text('Nova Tarefa'),
-          content: TextField(
-            controller: _controller,
-            autofocus: true,
-            decoration: const InputDecoration(
-              hintText: 'Digite o nome da tarefa',
-            ),
-            onSubmitted: (_) => _salvarTarefa(),
-          ),
-          actions: [ //Botões para cancelar ou adicionar a tarefa
-            TextButton(
-              onPressed: () {
-                _controller.clear();
-                Navigator.pop(context);
-              },
-              child: const Text('Cancelar'),
-            ),
-            ElevatedButton(
-              onPressed: _salvarTarefa, //Chama a função para salvar a tarefa quando o botão for pressionado
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF4CAF50),
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Adicionar'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _salvarTarefa() { //Função para salvar a tarefa na lista
-    final texto = _controller.text.trim(); //Obtém o texto digitado pelo usuário e remove espaços em branco extras
-    if (texto.isNotEmpty) { //Verifica se o texto não está vazio
-      setState(() { //Chama setState para atualizar a interface do usuário com a nova tarefa
-        _tarefas.add({'titulo': texto, 'concluida': false}); //adiciona um novo mapa a lista
-      });
-      _controller.clear(); //Limpa o campo de texto para a próxima entrada
-      Navigator.pop(context); //Fecha a janela de diálogo após adicionar a tarefa
+        notifyListeners();
+        return;
+      }
     }
   }
 
-  void _excluirTarefa(int index) { //Função para excluir uma tarefa da lista, recebe o índice da tarefa a ser removida
-    setState(() {
-      _tarefas.removeAt(index); //Remove a tarefa da lista usando o método removeAt, que remove o elemento no índice especificado
-    });
+  // REMOVER ITEM COMPLETAMENTE
+  void removerItemCompleto(Suculenta produto) {
+    // Remove todas as unidades de um produto de uma única vez.
+    itens.removeWhere(
+      // removeWhere percorre a lista e remove todos os elementos que atendam à condição.
+      (item) =>
+          item.produto.id ==
+          produto
+              .id, // Verifica se o ID do item é igual ao ID do produto recebido como parâmetro.
+    );
+
+    notifyListeners();
   }
 
-  void _alternarConclusao(int index) { //Função para alternar o status de conclusão de uma tarefa, recebe o índice da tarefa a ser atualizada
-    setState(() {
-      _tarefas[index]['concluida'] = !_tarefas[index]['concluida'];//Inverte o valor booleano do campo 'concluida' da tarefa, marcando-a como concluída ou não concluída
-    });
+  // VALOR TOTAL DA COMPRA
+  double get total {
+    // Getter utilizado para calcular o valor total de todos os produtos do carrinho.
+    double soma = 0;
+    for (var item in itens) {
+      // Percorre todos os itens do carrinho.
+      soma +=
+          item.produto.preco *
+          item.quantidade; // Multiplica o preço do produto pela quantidade e adiciona ao total acumulado.
+    }
+    return soma;
   }
+
+  // QUANTIDADE TOTAL DE ITENS
+  int get totalItens {
+    // Getter que calcula quantos itens existem no carrinho.
+    int soma = 0;
+    for (var item in itens) {
+      soma += item.quantidade; // Soma a quantidade de cada produto.
+    }
+    return soma;
+  }
+
+  // LIMPAR CARRINHO
+  void limpar() {
+    // Remove todos os produtos do carrinho.
+    itens.clear(); // Esvazia completamente a lista.
+    notifyListeners();
+  }
+}
+
+// INSTÂNCIA GLOBAL DO CARRINHO
+final carrinho =
+    CarrinhoController(); // Cria um único carrinho compartilhado por todo o aplicativo.
+
+// ------------- CONFIGURAÇÃO DAS ROTAS ---------------------------
+final GoRouter router = GoRouter(
+  // Define qual página será aberta quando o aplicativo iniciar.
+  initialLocation: '/',
+  // Lista de rotas disponíveis.
+  routes: [
+    GoRoute(
+      path: '/', // Caminho da página inicial.
+      builder: (context, state) => const HomePage(), // Widget que será exibido.
+    ),
+
+    GoRoute(
+      path: '/produto/:id', // :id = parâmetro dinâmico
+      builder: (context, state) {
+        // Obtém o parâmetro enviado pela URL.
+        final id = int.parse(
+          state.pathParameters['id']!,
+        ); // Procura dentro da lista de produtos aquele cujo ID seja igual ao recebido.
+        final produto = produtos.firstWhere(
+          (p) => p.id == id,
+        ); // Abre a página de detalhes do produto.
+        return ProdutoPage(produto: produto);
+      },
+    ),
+    GoRoute(
+      path: '/carrinho',
+      builder: (context, state) => const CarrinhoPage(),
+    ),
+  ],
+);
+void main() => runApp(MyApp());
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp.router(
+      // Configura o MaterialApp para usar o GoRouter.
+      title: 'Suculentas & Cia',
+      debugShowCheckedModeBanner: false, // Remove a tag de debug.
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF4A7C59)),
+        useMaterial3: true,
+      ),
+      routerConfig:
+          router, // Informa ao MaterialApp qual é a configuração de rotas a ser utilizada.
+    );
+  }
+}
+
+// HOME PAGE
+class HomePage extends StatelessWidget {
+  const HomePage({super.key});
 
   @override
-  void dispose() { //Chamado quando o widget é removido permanentemente da árvore.
-    _controller.dispose(); //Libera os recursos usados pelo TextEditingController para evitar vazamentos de memória
-    super.dispose(); //Chama o método dispose da classe pai para garantir que qualquer limpeza adicional seja realizada
-  }
-
-  @override                                     //Construção da interface principal
   Widget build(BuildContext context) {
     return Scaffold(
+      // cria a estrutura básica da tela
       appBar: AppBar(
-        title: const Text(
-          'Minhas Tarefas',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ),
-        ),
-        backgroundColor: const Color(0xFF4CAF50),
-      ),
-      body: _tarefas.isEmpty
-          ? const Center(
-              child: Text(
-                'Nenhuma tarefa ainda.\nToque em + para adicionar!',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16, color: Colors.grey),
-              ),
-            )
-          : ListView.builder( //Constrói uma lista de tarefas usando ListView.builder, que é eficiente para listas longas, pois constrói apenas os itens visíveis na tela
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: _tarefas.length, //Especifica o número de itens na lista, que é igual ao número de tarefas
-              itemBuilder: (context, index) { //Função que constrói cada item da lista, recebe o contexto e o índice do item a ser construído
-                final tarefa = _tarefas[index];
-                return ListTile( //Cada tarefa é representada por um ListTile, que inclui um Checkbox para marcar a conclusão, o título da tarefa e um botão de exclusão
-                  leading: Checkbox(
-                    value: tarefa['concluida'],
-                    activeColor: const Color(0xFF4CAF50),
-                    onChanged: (_) => _alternarConclusao(index),
+        title: const Text('🌵 Suculentas & Cia'),
+        backgroundColor: const Color(0xFF4A7C59),
+        foregroundColor: Colors.white,
+        actions: [
+          // Área de ações da AppBar.
+
+          // Escuta alterações do carrinho.
+          // Sempre que notifyListeners() for executado dentro do carrinho, este widget será reconstruído.
+          ListenableBuilder(
+            listenable: carrinho, // Objeto observado.
+            builder: (context, _) {
+              return Stack(
+                // Stack permite empilhar widgets.
+                children: [
+                  // BOTÃO DO CARRINHO
+                  IconButton(
+                    icon: const Icon(Icons.shopping_cart_outlined),
+                    onPressed: () => context.push('/carrinho'),
                   ),
-                  title: Text(
-                    tarefa['titulo'],
-                    style: TextStyle(
-                      fontSize: 16,
-                      decoration: tarefa['concluida']
-                          ? TextDecoration.lineThrough
-                          : null,
-                      color: tarefa['concluida'] ? Colors.grey : Colors.black87,
+
+                  // BADGE DE QUANTIDADE
+                  if (carrinho.totalItens >
+                      0) // Só aparece se existir pelo menos um item no carrinho.
+                    Positioned(
+                      right: 6,
+                      top: 6,
+                      child: Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: const BoxDecoration(
+                          color: Colors.orange,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text(
+                          '${carrinho.totalItens}', // Quantidade total de itens.
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+
+      // CORPO DA PÁGINA
+      body: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: produtos.length, // Quantidade de produtos.
+        itemBuilder: (context, index) {
+          // Responsável por construir cada item.
+          final produto = produtos[index]; // Obtém o produto atual.
+          return Card(
+            // Card utilizado para destacar visualmente cada produto da lista.
+            margin: const EdgeInsets.only(bottom: 12),
+            child: ListTile(
+              // ListTile organiza automaticamente
+
+              // EMOJI DO PRODUTO
+              leading: Text(
+                produto.emoji,
+                style: const TextStyle(fontSize: 36),
+              ),
+
+              // NOME DO PRODUTO
+              title: Text(produto.nome),
+
+              // SUBTÍTULO
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    produto.nomeCientifico,
+                    style: const TextStyle(
+                      fontStyle: FontStyle.italic,
+                      fontSize: 12,
+                      color: Colors.grey,
                     ),
                   ),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                    onPressed: () => _excluirTarefa(index),
-                  ),
-                );
-              },
+
+                  Text(
+                    'R\$ ${produto.preco.toStringAsFixed(2)}',
+                  ), // Preço do produto.
+                ],
+              ),
+
+              isThreeLine:
+                  true, // Informa que o subtítulo possui mais de uma linha.
+              // SETA LATERAL
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+
+              // ABRIR PRODUTO
+              onTap: () => context.go('/produto/${produto.id}'),
             ),
-      floatingActionButton: FloatingActionButton(  //Botão flutuante para adicionar novas tarefas, que chama a função _adicionarTarefa quando pressionado
-        onPressed: _adicionarTarefa,
-        backgroundColor: const Color(0xFF4CAF50),
-        foregroundColor: Colors.white,
-        child: const Icon(Icons.add),
+          );
+        },
       ),
     );
   }
