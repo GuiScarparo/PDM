@@ -1,7 +1,5 @@
-import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:hello_world/mainOriginal.dart';
 
 void main() {
   runApp(MeuApp());

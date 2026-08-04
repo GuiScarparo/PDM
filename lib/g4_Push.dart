@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 void main ()=> runApp(MaterialApp(home: TelaPrincipal()));
 
 class TelaPrincipal extends StatefulWidget {
+  const TelaPrincipal({super.key});
+
   @override
   _TelaPrincipalState createState() => _TelaPrincipalState();
 }
@@ -40,7 +42,7 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
 }
 class SegundaTela extends StatelessWidget {
   final String nome;
-  const SegundaTela({required this.nome});
+  const SegundaTela({super.key, required this.nome});
   @override
   Widget build(BuildContext context) {
     return Scaffold(

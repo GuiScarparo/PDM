@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 void main ()=> runApp(MaterialApp(home: TelaPrincipal()));
 
 class TelaPrincipal extends StatelessWidget {
+  const TelaPrincipal({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -24,6 +26,8 @@ class TelaPrincipal extends StatelessWidget {
   }
 }
 class TelaDetalhes extends StatelessWidget {
+  const TelaDetalhes({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

@@ -16,7 +16,7 @@ class MyApp extends StatelessWidget {
 }
 
 class TipoTeclados extends StatefulWidget {
-  TipoTeclados({super.key});
+  const TipoTeclados({super.key});
 
   @override
   State<TipoTeclados> createState() => _TipoTecladosState();
