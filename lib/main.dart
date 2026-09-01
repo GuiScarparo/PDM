@@ -26,8 +26,11 @@ class LocalizacaoPage extends StatefulWidget {
 }
 
 class _LocalizacaoPageState extends State<LocalizacaoPage> {
-  double latitude = 0.0;
-  double longitude = 0.0;
+  double latitudeAtual = 0.0;
+  double longitudeAtual = 0.0;
+  double distanciaAtual = 0.0;
+  double latitudeCasa = -21.471026;
+  double longitudeCasa = -46.991045;
 
   Future<void> buscarLocalizacao() async {
     bool servicoAtivo = await Geolocator.isLocationServiceEnabled();
@@ -44,17 +47,30 @@ class _LocalizacaoPageState extends State<LocalizacaoPage> {
     }
     Position posicao = await Geolocator.getCurrentPosition();
     setState(() {
-      latitude = posicao.latitude;
-      longitude = posicao.longitude;
+      latitudeAtual = posicao.latitude;
+      longitudeAtual = posicao.longitude;
     });
-    print('Latitude: $latitude');
-    print('Longitude: $longitude');
+    print('Latitude: $latitudeAtual');
+    print('Longitude: $longitudeAtual');
   }
+
+  Future<void> calcularDistancia() async {
+    setState(() {
+      distanciaAtual = Geolocator.distanceBetween(
+        latitudeAtual,
+        longitudeAtual,
+        latitudeCasa,
+        longitudeCasa,
+      );
+    });
+
+    print('Distância até casa: ${distanciaAtual.toStringAsFixed(2)} metros');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Minha localização')),
+      appBar: AppBar(title: const Text('Minha localização')),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(20.0),
@@ -62,31 +78,25 @@ class _LocalizacaoPageState extends State<LocalizacaoPage> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Icon(Icons.location_on, size: 80, color: Colors.red),
-              const SizedBox(height: 20),
-              const Text(
-                "Localização atual:",
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                "Latitude: $latitude\nLongitude: $longitude",
-                style: const TextStyle(fontSize: 10),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                "Longitude: $longitude\nLongitude: $longitude",
-                style: const TextStyle(fontSize: 10),
-              ),
+              const Icon(Icons.house, size: 80, color: Color(0xFF00BFFF)),
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: buscarLocalizacao,
-                child: const Text("Atualizar localização"),
+                child: const Text("Obter localização"),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: calcularDistancia,
+                child: const Text("Calcular distância até casa"),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                "Distância até casa: ${(distanciaAtual/1000).toStringAsFixed(2)} km",
               ),
             ],
-          )
-        )
-      )
+          ),
+        ),
+      ),
     );
   }
 }
