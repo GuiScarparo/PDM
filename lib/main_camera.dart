@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
+import 'dart:typed_data';
 
-import 'audio_feedback.dart';
+import 'package:flutter/material.dart';
+import 'package:camera/camera.dart';
 
 void main() {
   runApp(const TreinoApp());
@@ -123,6 +124,7 @@ class _MainScaffoldState extends State<MainScaffold> {
       HomePage(treinos: _treinos, aoDetalhar: _irParaTreino),
       TreinoPage(grupos: _grupos),
       const PerfilPage(),
+      const CameraPage(),
     ];
 
     return Scaffold(
@@ -130,7 +132,6 @@ class _MainScaffoldState extends State<MainScaffold> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _indiceSelecionado,
         onDestinationSelected: (i) {
-          AudioFeedback.playClick();
           setState(() => _indiceSelecionado = i);
         },
         destinations: const [
@@ -148,6 +149,11 @@ class _MainScaffoldState extends State<MainScaffold> {
             icon: Icon(Icons.person_outline),
             selectedIcon: Icon(Icons.person),
             label: 'Perfil',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.camera_alt_outlined),
+            selectedIcon: Icon(Icons.camera_alt),
+            label: 'Comprovar',
           ),
         ],
       ),
@@ -255,13 +261,11 @@ class _HomePageState extends State<HomePage> {
                       Checkbox(
                         value: treino.marcado,
                         onChanged: (v) {
-                          AudioFeedback.playClick();
                           setState(() => treino.marcado = v ?? false);
                         },
                       ),
                       TextButton(
                         onPressed: () {
-                          AudioFeedback.playClick();
                           widget.aoDetalhar();
                         },
                         child: const Text('Detalhar'),
@@ -369,7 +373,6 @@ class TreinoPage extends StatelessWidget {
                         const SizedBox(height: 8),
                         ElevatedButton(
                           onPressed: () {
-                            AudioFeedback.playClick();
                             _abrirExercicios(context, grupo);
                           },
                           style: ElevatedButton.styleFrom(
@@ -453,9 +456,165 @@ class PerfilPage extends StatelessWidget {
         title: Text(texto, style: TextStyle(color: cor)),
         trailing: const Icon(Icons.chevron_right),
         onTap: () {
-          AudioFeedback.playClick();
           onTap();
         },
+      ),
+    );
+  }
+}
+
+class CameraPage extends StatefulWidget {
+  const CameraPage({super.key});
+
+  @override
+  State<CameraPage> createState() => _CameraPageState();
+}
+
+class _CameraPageState extends State<CameraPage> {
+  CameraController? _controller;
+  List<CameraDescription> _cameras = [];
+  int _cameraIndex = 0;
+  bool _carregandoCamera = true;
+  Uint8List? _fotoCapturada;
+  String? _erro;
+
+  @override
+  void initState() {
+    super.initState();
+    _inicializarCamera();
+  }
+
+  Future<void> _inicializarCamera({CameraDescription? camera}) async {
+    try {
+      if (_cameras.isEmpty) {
+        _cameras = await availableCameras();
+      }
+      if (_cameras.isEmpty) {
+        if (mounted) {
+          setState(() {
+            _carregandoCamera = false;
+            _erro = 'Nenhuma câmera foi encontrada.';
+          });
+        }
+        return;
+      }
+
+      final controller = CameraController(
+        camera ?? _cameras[_cameraIndex],
+        ResolutionPreset.medium,
+        enableAudio: false,
+      );
+      await controller.initialize();
+
+      if (!mounted) {
+        await controller.dispose();
+        return;
+      }
+
+      setState(() {
+        _controller = controller;
+        _carregandoCamera = false;
+        _erro = null;
+      });
+    } on CameraException catch (exception) {
+      if (mounted) {
+        setState(() {
+          _carregandoCamera = false;
+          _erro = 'Não foi possível acessar a câmera: ${exception.code}.';
+        });
+      }
+    }
+  }
+
+  Future<void> _alternarCamera() async {
+    if (_cameras.length < 2 || _carregandoCamera) return;
+
+    final controller = _controller;
+    await controller?.dispose();
+    _cameraIndex = (_cameraIndex + 1) % _cameras.length;
+
+    if (mounted) {
+      setState(() {
+        _controller = null;
+        _fotoCapturada = null;
+        _carregandoCamera = true;
+      });
+    }
+
+    await _inicializarCamera(camera: _cameras[_cameraIndex]);
+  }
+
+  Future<void> _tirarFoto() async {
+    final controller = _controller;
+    if (controller == null || !controller.value.isInitialized) return;
+
+    try {
+      final foto = await controller.takePicture();
+      final bytes = await foto.readAsBytes();
+      if (mounted) setState(() => _fotoCapturada = bytes);
+    } on CameraException catch (exception) {
+      if (mounted) {
+        setState(
+          () => _erro = 'Não foi possível tirar a foto: ${exception.code}.',
+        );
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = _controller;
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Comprovar treino',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+              ),
+              IconButton(
+                onPressed: _cameras.length < 2 ? null : _alternarCamera,
+                tooltip: 'Alternar câmera',
+                icon: const Icon(Icons.cameraswitch),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Text('Tire uma foto para comprovar a realização do treino.'),
+          const SizedBox(height: 16),
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: _erro != null
+                  ? Center(child: Text(_erro!, textAlign: TextAlign.center))
+                  : _fotoCapturada != null
+                  ? Image.memory(_fotoCapturada!, fit: BoxFit.cover)
+                  : controller == null || !controller.value.isInitialized
+                  ? const Center(child: CircularProgressIndicator())
+                  : CameraPreview(controller),
+            ),
+          ),
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            onPressed: controller == null ? null : _tirarFoto,
+            icon: const Icon(Icons.camera_alt),
+            label: Text(
+              _fotoCapturada == null ? 'Tirar foto' : 'Tirar outra foto',
+            ),
+          ),
+        ],
       ),
     );
   }
